@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String
+  avatarUrl   String?
+  firebaseUid String   @unique
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  hostedGames  Game[]       @relation("GameHost")
+  gamePlayers  GamePlayer[]
+}
+
+model Game {
+  id            String     @id @default(uuid())
+  name          String
+  hostId        String
+  host          User       @relation("GameHost", fields: [hostId], references: [id])
+  buyInAmount   Float
+  chipsPerBuyIn Int        @default(100)
+  status        GameStatus @default(pending)
+  createdAt     DateTime   @default(now())
+  finishedAt    DateTime?
+  updatedAt     DateTime   @updatedAt
+
+  players GamePlayer[]
+
+  @@index([hostId])
+  @@index([status])
+}
+
+enum GameStatus {
+  pending
+  active
+  finished
+}
+
+model GamePlayer {
+  id           String    @id @default(uuid())
+  gameId       String
+  game         Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  totalBuyIns  Int       @default(1)
+  totalMoneyIn Float     @default(0)
+  moneyPaid    Boolean   @default(false)
+  chipsOut     Int?
+  cashOut      Float?
+  exitedAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  transactions Transaction[]
+
+  @@unique([gameId, userId])
+  @@index([gameId])
+  @@index([userId])
+}
+
+model Transaction {
+  id           String          @id @default(uuid())
+  gamePlayerId String
+  gamePlayer   GamePlayer      @relation(fields: [gamePlayerId], references: [id], onDelete: Cascade)
+  type         TransactionType
+  chips        Int
+  amount       Float
+  createdAt    DateTime        @default(now())
+
+  @@index([gamePlayerId])
+}
+
+enum TransactionType {
+  buy_in
+  cash_out
+}
