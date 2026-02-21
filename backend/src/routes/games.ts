@@ -61,23 +61,30 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
 
 router.post('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const { name, buyInAmount, chipsPerBuyIn = 100, playerEmails } = req.body;
+    const { name, buyInAmount, chipsPerBuyIn = 100 } = req.body;
 
-    if (!name || !buyInAmount) {
-      return res.status(400).json({ error: 'Name and buyInAmount are required' });
+    if (!buyInAmount) {
+      return res.status(400).json({ error: 'buyInAmount is required' });
     }
+
+    // Auto-generate name from date if not provided
+    const gameName = name || new Date().toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
 
     const game = await prisma.game.create({
       data: {
-        name,
-        buyInAmount,
-        chipsPerBuyIn,
+        name: gameName,
+        buyInAmount: parseFloat(buyInAmount),
+        chipsPerBuyIn: parseInt(chipsPerBuyIn),
         hostId: req.user!.id,
         players: {
           create: {
             userId: req.user!.id,
             totalBuyIns: 1,
-            totalMoneyIn: buyInAmount,
+            totalMoneyIn: parseFloat(buyInAmount),
           },
         },
       },
@@ -171,8 +178,12 @@ router.post('/:id/finish', authMiddleware, async (req: AuthRequest, res) => {
 
 router.post('/:gameId/players', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const { email } = req.body;
+    const { name, email } = req.body;
     const { gameId } = req.params;
+
+    if (!name && !email) {
+      return res.status(400).json({ error: 'Name or email is required' });
+    }
 
     const game = await prisma.game.findUnique({
       where: { id: gameId },
@@ -186,16 +197,30 @@ router.post('/:gameId/players', authMiddleware, async (req: AuthRequest, res) =>
       return res.status(403).json({ error: 'Only host can add players' });
     }
 
-    let user = await prisma.user.findUnique({
-      where: { email },
-    });
+    let user = null;
 
+    // Try to find existing user by email first
+    if (email) {
+      user = await prisma.user.findUnique({
+        where: { email },
+      });
+    }
+
+    // If not found by email, search by name
+    if (!user && name) {
+      user = await prisma.user.findFirst({
+        where: { name: { equals: name, mode: 'insensitive' } },
+      });
+    }
+
+    // Create guest user if not found
     if (!user) {
+      const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       user = await prisma.user.create({
         data: {
-          email,
-          name: email.split('@')[0],
-          firebaseUid: `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          email: email || `${guestId}@guest.local`,
+          name: name || (email ? email.split('@')[0] : 'Guest'),
+          firebaseUid: guestId,
         },
       });
     }

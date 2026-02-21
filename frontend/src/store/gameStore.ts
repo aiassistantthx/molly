@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Game, gamesApi } from '../api/games';
+import { Game, gamesApi, AddPlayerData } from '../api/games';
 
 interface GameState {
   games: Game[];
@@ -11,7 +11,7 @@ interface GameState {
   createGame: (data: Parameters<typeof gamesApi.create>[0]) => Promise<Game>;
   startGame: (id: string) => Promise<void>;
   finishGame: (id: string) => Promise<void>;
-  addPlayer: (gameId: string, email: string) => Promise<void>;
+  addPlayer: (gameId: string, data: AddPlayerData) => Promise<void>;
   buyIn: (gameId: string, playerId: string) => Promise<void>;
   cashOut: (gameId: string, playerId: string, chipsOut: number) => Promise<void>;
   markPaid: (gameId: string, playerId: string, paid: boolean) => Promise<void>;
@@ -74,9 +74,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  addPlayer: async (gameId, email) => {
+  addPlayer: async (gameId, data) => {
     try {
-      await gamesApi.addPlayer(gameId, email);
+      await gamesApi.addPlayer(gameId, data);
       await get().fetchGame(gameId);
     } catch (err) {
       set({ error: 'Failed to add player' });

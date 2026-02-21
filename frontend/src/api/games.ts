@@ -36,10 +36,15 @@ export interface GamePlayer {
 }
 
 export interface CreateGameData {
-  name: string;
+  name?: string;
   buyInAmount: number;
   chipsPerBuyIn?: number;
   playerEmails?: string[];
+}
+
+export interface AddPlayerData {
+  name?: string;
+  email?: string;
 }
 
 export const gamesApi = {
@@ -55,8 +60,8 @@ export const gamesApi = {
 
   finish: (id: string) => api.post<Game>(`/games/${id}/finish`).then((res) => res.data),
 
-  addPlayer: (gameId: string, email: string) =>
-    api.post<GamePlayer>(`/games/${gameId}/players`, { email }).then((res) => res.data),
+  addPlayer: (gameId: string, data: AddPlayerData) =>
+    api.post<GamePlayer>(`/games/${gameId}/players`, data).then((res) => res.data),
 
   removePlayer: (gameId: string, playerId: string) =>
     api.delete(`/games/${gameId}/players/${playerId}`),

@@ -6,6 +6,8 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   User,
@@ -52,6 +54,24 @@ export const signInWithGoogle = async () => {
   }
   const result = await signInWithPopup(auth, googleProvider);
   return result.user;
+};
+
+export const signInWithEmail = async (email: string, password: string) => {
+  if (isDemoMode) {
+    localStorage.setItem('demoLoggedIn', 'true');
+    localStorage.setItem('demoEmail', email);
+    return demoUser;
+  }
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user;
+  } catch (error: any) {
+    if (error.code === 'auth/user-not-found') {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      return result.user;
+    }
+    throw error;
+  }
 };
 
 export const sendMagicLink = async (email: string) => {

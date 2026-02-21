@@ -5,6 +5,7 @@ import { PlayerRow, AddPlayerModal } from '../components/game';
 import { Button, Card } from '../components/ui';
 import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
+import { AddPlayerData } from '../api/games';
 
 export const Game = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,9 +66,9 @@ export const Game = () => {
     }
   };
 
-  const handleAddPlayer = async (email: string) => {
+  const handleAddPlayer = async (data: AddPlayerData) => {
     if (id) {
-      await addPlayer(id, email);
+      await addPlayer(id, data);
     }
   };
 

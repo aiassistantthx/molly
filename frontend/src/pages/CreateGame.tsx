@@ -20,10 +20,6 @@ export const CreateGame = () => {
     const buyIn = parseFloat(buyInAmount);
     const chips = parseInt(chipsPerBuyIn, 10);
 
-    if (!name.trim()) {
-      setError('Game name is required');
-      return;
-    }
     if (isNaN(buyIn) || buyIn <= 0) {
       setError('Buy-in must be a positive number');
       return;
@@ -35,7 +31,7 @@ export const CreateGame = () => {
 
     try {
       const game = await createGame({
-        name: name.trim(),
+        name: name.trim() || undefined,
         buyInAmount: buyIn,
         chipsPerBuyIn: chips,
       });
@@ -63,11 +59,10 @@ export const CreateGame = () => {
         <Card variant="bordered" className="p-5">
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Game Name"
+              label="Game Name (optional)"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Friday Night Poker"
-              required
+              placeholder="Will auto-generate from date if empty"
             />
 
             <Input

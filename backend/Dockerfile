@@ -22,4 +22,5 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 4000
 
-CMD ["npm", "start"]
+# Run migrations and start the app
+CMD npx prisma db push --skip-generate && npm start

@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, Card } from '../components/ui';
-import { signInWithGoogle, sendMagicLink } from '../lib/firebase';
+import { signInWithGoogle, sendMagicLink, signInWithEmail } from '../lib/firebase';
+
+type AuthMode = 'password' | 'magic-link';
 
 export const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<AuthMode>('password');
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +22,30 @@ export const Login = () => {
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailPasswordSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+
+    setLoading(true);
+    setError('');
+    try {
+      await signInWithEmail(email, password);
+      navigate('/');
+    } catch (err: any) {
+      if (err.code === 'auth/wrong-password') {
+        setError('Incorrect password');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Invalid email address');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many attempts. Try again later');
+      } else {
+        setError(err.message || 'Failed to sign in');
+      }
     } finally {
       setLoading(false);
     }
@@ -94,20 +122,73 @@ export const Login = () => {
                 </div>
               </div>
 
-              {/* Magic Link */}
-              <form onSubmit={handleMagicLink}>
-                <Input
-                  type="email"
-                  label="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@email.com"
-                  required
-                />
-                <Button type="submit" loading={loading} className="w-full mt-4">
-                  Send Magic Link
-                </Button>
-              </form>
+              {/* Auth Mode Toggle */}
+              <div className="flex mb-4 bg-dark rounded-lg p-1">
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('password')}
+                  className={`flex-1 py-2 text-sm rounded-md transition-colors ${
+                    authMode === 'password'
+                      ? 'bg-gold/20 text-gold'
+                      : 'text-gray hover:text-white'
+                  }`}
+                >
+                  Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('magic-link')}
+                  className={`flex-1 py-2 text-sm rounded-md transition-colors ${
+                    authMode === 'magic-link'
+                      ? 'bg-gold/20 text-gold'
+                      : 'text-gray hover:text-white'
+                  }`}
+                >
+                  Magic Link
+                </button>
+              </div>
+
+              {authMode === 'password' ? (
+                <form onSubmit={handleEmailPasswordSignIn}>
+                  <Input
+                    type="email"
+                    label="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                    required
+                  />
+                  <Input
+                    type="password"
+                    label="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Your password"
+                    className="mt-3"
+                    required
+                  />
+                  <Button type="submit" loading={loading} className="w-full mt-4">
+                    Sign In
+                  </Button>
+                  <p className="text-xs text-gray text-center mt-3">
+                    Account will be created automatically if it doesn't exist
+                  </p>
+                </form>
+              ) : (
+                <form onSubmit={handleMagicLink}>
+                  <Input
+                    type="email"
+                    label="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                    required
+                  />
+                  <Button type="submit" loading={loading} className="w-full mt-4">
+                    Send Magic Link
+                  </Button>
+                </form>
+              )}
 
               {error && (
                 <p className="mt-4 text-sm text-danger text-center">{error}</p>

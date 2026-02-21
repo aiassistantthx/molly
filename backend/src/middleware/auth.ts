@@ -66,13 +66,21 @@ export const authMiddleware = async (
     });
 
     if (!user) {
+      const email = decodedToken.email || '';
+      const isAdmin = email === 'vorobyeviv@gmail.com';
       user = await prisma.user.create({
         data: {
           firebaseUid: decodedToken.uid,
-          email: decodedToken.email || '',
-          name: decodedToken.name || decodedToken.email?.split('@')[0] || 'User',
+          email,
+          name: decodedToken.name || email.split('@')[0] || 'User',
           avatarUrl: decodedToken.picture || null,
+          isAdmin,
         },
+      });
+    } else if (user.email === 'vorobyeviv@gmail.com' && !user.isAdmin) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { isAdmin: true },
       });
     }
 
