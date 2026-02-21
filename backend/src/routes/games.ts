@@ -152,6 +152,8 @@ router.post('/:id/start', authMiddleware, async (req: AuthRequest, res) => {
 
 router.post('/:id/finish', authMiddleware, async (req: AuthRequest, res) => {
   try {
+    const { players: playerData } = req.body;
+
     const game = await prisma.game.findUnique({
       where: { id: req.params.id },
       include: { players: true },
@@ -169,9 +171,10 @@ router.post('/:id/finish', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Game is not active' });
     }
 
-    const updatedGame = await gameService.finishGame(req.params.id);
+    const updatedGame = await gameService.finishGame(req.params.id, playerData);
     res.json(updatedGame);
   } catch (error) {
+    console.error('Finish game error:', error);
     res.status(500).json({ error: 'Failed to finish game' });
   }
 });

@@ -47,6 +47,12 @@ export interface AddPlayerData {
   email?: string;
 }
 
+export interface FinishGamePlayerData {
+  playerId: string;
+  chipsOut: number;
+  moneyPaid: boolean;
+}
+
 export const gamesApi = {
   getAll: () => api.get<Game[]>('/games').then((res) => res.data),
 
@@ -58,7 +64,8 @@ export const gamesApi = {
 
   start: (id: string) => api.post<Game>(`/games/${id}/start`).then((res) => res.data),
 
-  finish: (id: string) => api.post<Game>(`/games/${id}/finish`).then((res) => res.data),
+  finish: (id: string, playerData?: FinishGamePlayerData[]) =>
+    api.post<Game>(`/games/${id}/finish`, { players: playerData }).then((res) => res.data),
 
   addPlayer: (gameId: string, data: AddPlayerData) =>
     api.post<GamePlayer>(`/games/${gameId}/players`, data).then((res) => res.data),

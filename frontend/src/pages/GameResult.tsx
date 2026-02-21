@@ -43,24 +43,33 @@ export const GameResult = () => {
   const results = currentGame.players.map((player) => {
     const cashOut = (player.chipsOut ?? 0) * chipValue;
     const profit = cashOut - player.totalMoneyIn;
+    // Net amount to receive/pay considering if they already paid
+    const netSettlement = player.moneyPaid
+      ? profit // If paid, they just get/lose the profit
+      : cashOut - player.totalMoneyIn; // If not paid, they receive cashOut but "owe" their buy-in
     return {
       ...player,
       cashOutValue: cashOut,
       profit,
+      netSettlement,
     };
   }).sort((a, b) => b.profit - a.profit);
 
-  // Calculate settlements (who owes whom)
+  // Calculate settlements (who owes whom) considering payment status
   const calculateSettlements = (): Settlement[] => {
     const settlements: Settlement[] = [];
+
+    // Balance = what they should receive minus what they physically paid
     const balances = results.map((r) => ({
       id: r.userId,
       name: r.user.name,
-      balance: r.profit,
+      // If they paid: balance is their profit (positive = receive, negative = already lost money physically)
+      // If not paid: balance is their cashOut value (they receive chips value but haven't paid buy-in)
+      balance: r.moneyPaid ? r.profit : r.cashOutValue - r.totalMoneyIn,
     }));
 
-    const debtors = balances.filter((b) => b.balance < 0).sort((a, b) => a.balance - b.balance);
-    const creditors = balances.filter((b) => b.balance > 0).sort((a, b) => b.balance - a.balance);
+    const debtors = balances.filter((b) => b.balance < 0).map(b => ({...b})).sort((a, b) => a.balance - b.balance);
+    const creditors = balances.filter((b) => b.balance > 0).map(b => ({...b})).sort((a, b) => b.balance - a.balance);
 
     let i = 0;
     let j = 0;
@@ -147,6 +156,7 @@ export const GameResult = () => {
                   <p className="font-medium text-white truncate">{player.user.name}</p>
                   <p className="text-xs text-gray">
                     {player.totalBuyIns} buy-ins · {player.chipsOut} chips
+                    {!player.moneyPaid && <span className="text-danger ml-1">(not paid)</span>}
                   </p>
                 </div>
 
@@ -183,7 +193,16 @@ export const GameResult = () => {
                 ))}
               </div>
             </Card>
+            <p className="text-xs text-gray text-center">
+              After these payments, everyone will have received their correct amount
+            </p>
           </div>
+        )}
+
+        {settlements.length === 0 && (
+          <Card className="text-center py-4">
+            <p className="text-success">No settlements needed - everyone broke even!</p>
+          </Card>
         )}
 
         <div className="pt-4">

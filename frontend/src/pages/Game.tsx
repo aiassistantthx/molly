@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout';
-import { PlayerRow, AddPlayerModal } from '../components/game';
+import { PlayerRow, AddPlayerModal, FinishGameModal } from '../components/game';
 import { Button, Card } from '../components/ui';
 import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
-import { AddPlayerData } from '../api/games';
+import { AddPlayerData, FinishGamePlayerData } from '../api/games';
 
 export const Game = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +24,7 @@ export const Game = () => {
   } = useGameStore();
 
   const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [showFinishGame, setShowFinishGame] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -59,9 +60,10 @@ export const Game = () => {
     }
   };
 
-  const handleFinish = async () => {
-    if (id && window.confirm('Are you sure you want to finish this game?')) {
-      await finishGame(id);
+  const handleFinish = async (playerData: FinishGamePlayerData[]) => {
+    if (id) {
+      await finishGame(id, playerData);
+      setShowFinishGame(false);
       navigate(`/game/${id}/results`);
     }
   };
@@ -141,7 +143,7 @@ export const Game = () => {
                 >
                   Add Player
                 </Button>
-                <Button variant="danger" onClick={handleFinish} className="flex-1">
+                <Button variant="danger" onClick={() => setShowFinishGame(true)} className="flex-1">
                   Finish Game
                 </Button>
               </>
@@ -205,6 +207,15 @@ export const Game = () => {
         isOpen={showAddPlayer}
         onClose={() => setShowAddPlayer(false)}
         onAdd={handleAddPlayer}
+      />
+
+      <FinishGameModal
+        isOpen={showFinishGame}
+        onClose={() => setShowFinishGame(false)}
+        onFinish={handleFinish}
+        players={currentGame.players}
+        buyInAmount={currentGame.buyInAmount}
+        chipsPerBuyIn={currentGame.chipsPerBuyIn}
       />
     </Layout>
   );

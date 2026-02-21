@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Game, gamesApi, AddPlayerData } from '../api/games';
+import { Game, gamesApi, AddPlayerData, FinishGamePlayerData } from '../api/games';
 
 interface GameState {
   games: Game[];
@@ -10,7 +10,7 @@ interface GameState {
   fetchGame: (id: string) => Promise<void>;
   createGame: (data: Parameters<typeof gamesApi.create>[0]) => Promise<Game>;
   startGame: (id: string) => Promise<void>;
-  finishGame: (id: string) => Promise<void>;
+  finishGame: (id: string, playerData?: FinishGamePlayerData[]) => Promise<void>;
   addPlayer: (gameId: string, data: AddPlayerData) => Promise<void>;
   buyIn: (gameId: string, playerId: string) => Promise<void>;
   cashOut: (gameId: string, playerId: string, chipsOut: number) => Promise<void>;
@@ -65,9 +65,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  finishGame: async (id) => {
+  finishGame: async (id, playerData) => {
     try {
-      const game = await gamesApi.finish(id);
+      const game = await gamesApi.finish(id, playerData);
       set({ currentGame: game });
     } catch (err) {
       set({ error: 'Failed to finish game' });
