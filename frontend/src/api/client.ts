@@ -9,6 +9,14 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
+  // Check for direct login token first
+  const directToken = localStorage.getItem('directToken');
+  if (directToken) {
+    config.headers.Authorization = `Bearer ${directToken}`;
+    return config;
+  }
+
+  // Fall back to Firebase token
   const token = await getIdToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

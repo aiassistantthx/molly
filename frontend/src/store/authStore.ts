@@ -3,6 +3,19 @@ import { User } from 'firebase/auth';
 import { onAuthChange, signOut as firebaseSignOut } from '../lib/firebase';
 import { usersApi, User as ApiUser } from '../api/users';
 
+// Check for direct login user
+const getDirectUser = (): ApiUser | null => {
+  const userStr = localStorage.getItem('directUser');
+  if (userStr) {
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 interface AuthState {
   firebaseUser: User | null;
   user: ApiUser | null;
@@ -32,12 +45,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
+    // Clear direct login
+    localStorage.removeItem('directToken');
+    localStorage.removeItem('directUser');
+    // Clear Firebase
     await firebaseSignOut();
     set({ firebaseUser: null, user: null });
   },
 
   initialize: () => {
     set({ initialized: true });
+
+    // Check for direct login first
+    const directUser = getDirectUser();
+    if (directUser) {
+      set({ user: directUser, loading: false });
+      return () => {};
+    }
+
     const unsubscribe = onAuthChange(async (firebaseUser) => {
       set({ firebaseUser, loading: true });
       if (firebaseUser) {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, Card } from '../components/ui';
 import { signInWithGoogle, sendMagicLink, signInWithEmail } from '../lib/firebase';
+import { authApi } from '../api/auth';
 
 type AuthMode = 'password' | 'magic-link';
 
@@ -33,6 +34,22 @@ export const Login = () => {
 
     setLoading(true);
     setError('');
+
+    // Try direct login first (for admin and local users)
+    try {
+      const response = await authApi.login(email, password);
+      localStorage.setItem('directToken', response.token);
+      localStorage.setItem('directUser', JSON.stringify(response.user));
+      navigate('/');
+      return;
+    } catch (directErr: any) {
+      // If direct login fails with 401, try Firebase
+      if (directErr.response?.status !== 401) {
+        console.log('Direct login not available, trying Firebase');
+      }
+    }
+
+    // Fall back to Firebase
     try {
       await signInWithEmail(email, password);
       navigate('/');

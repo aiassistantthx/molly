@@ -27,6 +27,27 @@ export const authMiddleware = async (
 
     const token = authHeader.split('Bearer ')[1];
 
+    // Direct login tokens (bypass Firebase)
+    if (token.startsWith('direct_')) {
+      const user = await prisma.user.findFirst({
+        where: { firebaseUid: token },
+      });
+
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+      }
+
+      req.user = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        firebaseUid: user.firebaseUid,
+        isAdmin: user.isAdmin,
+      };
+
+      return next();
+    }
+
     // Demo mode - accept demo token
     if (isDemoMode && token === 'demo-token') {
       let user = await prisma.user.findUnique({
