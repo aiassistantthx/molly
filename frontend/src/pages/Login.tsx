@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Input, Card } from '../components/ui';
 import { signInWithGoogle, sendMagicLink, signInWithEmail } from '../lib/firebase';
 import { authApi } from '../api/auth';
+import { useAuthStore } from '../store/authStore';
 
 type AuthMode = 'password' | 'magic-link';
 
 export const Login = () => {
   const navigate = useNavigate();
+  const { setDirectUser } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authMode, setAuthMode] = useState<AuthMode>('password');
@@ -40,6 +42,7 @@ export const Login = () => {
       const response = await authApi.login(email, password);
       localStorage.setItem('directToken', response.token);
       localStorage.setItem('directUser', JSON.stringify(response.user));
+      setDirectUser(response.user);
       navigate('/');
       return;
     } catch (directErr: any) {

@@ -22,6 +22,7 @@ interface AuthState {
   loading: boolean;
   initialized: boolean;
   setFirebaseUser: (user: User | null) => void;
+  setDirectUser: (user: ApiUser) => void;
   fetchUser: () => Promise<void>;
   signOut: () => Promise<void>;
   initialize: () => () => void;
@@ -34,6 +35,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialized: false,
 
   setFirebaseUser: (firebaseUser) => set({ firebaseUser }),
+
+  setDirectUser: (user) => set({ user, loading: false }),
 
   fetchUser: async () => {
     try {
