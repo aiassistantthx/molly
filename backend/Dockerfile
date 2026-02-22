@@ -22,5 +22,5 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 4000
 
-# Run migrations and start the app
-CMD npx prisma db push --skip-generate && npm start
+# Run migrations, seed admin, and start the app
+CMD npx prisma db push --skip-generate && node dist/scripts/seed-admin.js && npm start
