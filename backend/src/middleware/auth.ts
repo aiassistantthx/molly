@@ -61,9 +61,24 @@ export const authMiddleware = async (
       return res.status(401).json({ error: 'Invalid token' });
     }
 
+    // Try to find by firebaseUid first
     let user = await prisma.user.findUnique({
       where: { firebaseUid: decodedToken.uid },
     });
+
+    // If not found by firebaseUid, try by email (for seeded users)
+    if (!user && decodedToken.email) {
+      user = await prisma.user.findUnique({
+        where: { email: decodedToken.email },
+      });
+      // Update the firebaseUid if found by email
+      if (user) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { firebaseUid: decodedToken.uid },
+        });
+      }
+    }
 
     if (!user) {
       const email = decodedToken.email || '';
